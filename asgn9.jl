@@ -174,38 +174,39 @@ end
 # takes a JYSS5 expression and an environment
 # and returns the value the expression evaluates to
 function interp(e::ExprC, env::Environment)
-    @match e begin
-        NumC(n) => NumV(n)
-        StrC(s) => StrV(s)
-        IdC(i) => lookup(string(i), env.b)
-
+    if (typeof(e) == NumC)
+        NumV(e.n)
+    elseif (typeof(e) == StrC)
+        StrV(e.s)
+    elseif (typeof(e) == IdC)
+        lookup(e.i, env.b)
+    elseif (typeof(e) == AppC)
+        # not implemented
+    elseif (typeof(e) == PrimC)
+        interpPrim(e.o, interp(e.l, env), interp(e.r, env))
+    elseif (typeof(e) == ErrC)
+        error("user-error: " + e.v)
+    elseif (typeof(e) == IfC)
+        t = interp(e.test, env)
+        if (typeof(t) == BoolV)
+            if (t.bool)
+                interp(e.then, env)
+            else
+                interp(e.otherwise, env)
+            end
+        else
+            error("interp: non-boolean provided as conditional (JYSS)")
+        end
+    elseif (typeof(e) == LamC)
+        ClosV(e.args, e.body, env)
     end
-
-    # if (typeof(e) == NumC)
-    #     NumV(e.n)
-    # elseif (typeof(e) == StrC)
-    #     StrV(e.s)
-    # elseif (typeof(e) == IdC)
-    #     lookup(string(e.i), env.b)
-    # elseif (typeof(e) == AppC)
-    #     res = interp(e.app, env)
-
-    #     if (typeof(res) == ClosV)
-    #         nextRes = interp(res.body, ExtendEnvMult(res.args, e.a (closV-env f-value) env)))
-
-    #     end
-
-    #     # elseif (typeof(e) == PrimC)
-    #     # elseif (typeof(e) == ErrC)
-    #     # elseif (typeof(e) == IfC)
-    #     # elseif (typeof(e) == LamC)
-    #     # else
-    # end
 end
 @test interp(NumC(10), topEnv) == NumV(10)
 @test interp(StrC("10"), topEnv) == StrV("10")
 @test interp(IdC("false"), topEnv) == BoolV(false)
-
+@test interp(PrimC("+", NumC(19), NumC(3)), topEnv) == NumV(22)
+@test interp(IfC(IdC("false"), NumC(10), NumC(20)), topEnv) == NumV(20)
+@test typeof(interp(LamC([], NumC(19)), topEnv)) == ClosV
 
 # takes a binding and an environment and returns the given environment
 # with the binding added
