@@ -1,56 +1,132 @@
-
 # ExprC structs 
+
 struct NumC
     n
 end
+
 struct StrC
-    s
+    s::String
 end
+
 struct IdC
-    i
+    i::Symbol
 end
+
 struct IfC
     test
     then
     otherwise
 end
+
 struct AppC
     app
     args
 end
+
 struct LamC
-    args
+    args::Array{Symbol}
     body
 end
 
+struct PrimC
+    o::Symbol
+    l
+    r
+end
+
+struct ErrC
+    v
+end
+
+ExprC = Union{NumC,StrC,IdC,IfC,AppC,LamC,PrimC,ErrC}
+
 # Value structs 
+struct NumV
+    num::Real
+end
 
-# ; takes a JYSS5 expression and an environment
-# ; and returns the value the expression evaluates to
-# (define (interp [e : ExprC] [env : Environment]) : Value
-#   (match e
-#     [(numC n) (numV n)]
-#     [(strC s) (strV s)]
-#     [(idC s) (lookup s env)]
-#     [(appC f a) (match (interp f env)
-#                   [(? closV? c)(local ([define f-value c])
-#                   (interp (closV-body f-value)
-#                           (extend-env-mult (closV-args f-value) a (closV-env f-value) env)))]
-#                   [(? primV? p)(local ([define f-value (closV (primV-args p) (primV-body p) env)])
-#                   (interp (closV-body f-value)
-#                           (extend-env-mult (closV-args f-value) a (closV-env f-value) env)))]
-#                   [other (error 'interp "application of a non-closure (JYSS)")])]
-#     [(primC o l r) (interp-prim o (interp l env) (interp r env))]
-#     [(errC v) (error 'user-error (serialize (interp v env)))]
-#     [(ifC a b c) (match (interp a env)
-#                    [(boolV ?) (cond
-#                                 [? (interp b env)]
-#                                 [else (interp c env)])]
-#                    [other (error 'interp "non-boolean provided as conditional (JYSS)")])]
-#     [(lamC a b) (closV a b env)]))
+struct StrV
+    str::String
+end
 
-# testing making struct instances 
+struct BoolV
+    bool::Bool
+end
+
+struct ClosV
+    args::Array{Symbol}
+    body::ExprC
+    env
+end
+
+struct PrimV
+    args::Array{Symbol}
+    body::ExprC
+end
+
+Value = Union{NumV,StrV,BoolV,ClosV,PrimV}
+
+# Bind Type
+struct Bind
+    name
+    value
+end
+
+struct Enviroment
+    Bind[]
+end
+# takes a binding and an environment and returns the given environment
+# with the binding added
+
+extendEnv(b::Bind, env::Enviroment) = push!(env, b)
+
+# takes a list of closure arguments, a list of application arguments,
+# a closure environment, and an application environment and adds the bindings
+# to the closure environment
+
+# Use Strings for Symbols? Have not finished this method
+
+extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Enviroment, fEnv::Enviroment) =
+    if isempty(cArgs)
+        "extend-env-mult too many arguments provided (JYSS)"
+    elseif isempty(fArgs)
+        "extend-env-mult too many arguments provided (JYSS)"
+    else
+        extendEnvMult() # haven't implemented yet
+    end
+
+#takes a symbol and an environment and returns the value
+#of the binding that has that symbol, if there is one
+
+lookup(target::String, env::Array{Bind}) =
+    if isempty(env)
+        println("name not found")
+    else
+        if target == env[1].name
+            env[1].value
+        else
+            popfirst!(env)
+            lookup(target, env)
+        end
+    end
+
+using Test
+
+@test lookup("s", [Bind("b", "SOME VALUE"), Bind("s", "some value")]) == "some value"
+
+# (define (lookup [for : Symbol] [env : Environment]) : Value
+#   (cond
+#     [(empty? env) (error 'lookup "name not found (JYSS)")]
+#     [else (cond
+#             [(equal? for (bind-name (first env)))
+#              (bind-val (first env))]
+#             [else (lookup for (rest env))])]))
+# Tests
+
 x = NumC(10)
 y = IfC(10, 11, 12)
 println(x)
 println(y)
+
+b = Bind("Test Bind", "Value of 3")
+println(b)
