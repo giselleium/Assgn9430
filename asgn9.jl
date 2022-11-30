@@ -29,7 +29,7 @@ begin
     end
 
     struct LamC
-        args::Array{Symbol}
+        args
         body
     end
 
@@ -43,7 +43,7 @@ begin
         v
     end
 
-    ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
+    ExprC = Union{NumC,StrC,IdC,AppC,IfC,LamC,PrimC,ErrC}
 
     # Value structs 
     struct NumV
@@ -92,6 +92,29 @@ topEnv = Environment([
     Bind("equal?", PrimV(["a", "b"], PrimC("equal?", IdC("a"), IdC("b")))),
     Bind("error", PrimV(["v"], ErrC(IdC("v"))))
 ])
+
+# takes a binding and an environment and returns the given environment
+# with the binding added
+function extendEnv(b::Bind, env)
+    push!(env.b, b)
+    return env
+end
+
+# takes a list of closure arguments, a list of application arguments,
+# a closure environment, and an application environment and adds the bindings
+# to the closure environment
+function extendEnvMult(cArgs, fArgs, cEnv::Environment, fEnv::Environment)
+    if (isempty(cArgs) && isempty(fArgs))
+        cEnv
+    elseif isempty(cArgs)
+        throw(DomainError(cArgs, "extend-env-mult: too many arguments provided (JYSS)"))
+    elseif isempty(fArgs)
+        throw(DomainError(fArgs, "extend-env-mult: too few arguments provided (JYSS)"))
+    else
+        temp = extendEnv(Bind(cArgs[1], interp(fArgs[1], fEnv)), cEnv)
+        extendEnvMult(cArgs[2:end], fArgs[2:end], temp, fEnv)
+    end
+end
 
 # takes a value and returns the serialization of the value
 function serialize(v)
@@ -181,7 +204,15 @@ function interp(e::ExprC, env::Environment)
     elseif (typeof(e) == IdC)
         lookup(e.i, env.b)
     elseif (typeof(e) == AppC)
-        # not implemented
+        f = interp(e.app, env)
+        if (typeof(f) == ClosV)
+            interp(f.body, extendEnvMult(f.args, e.args, f.env, env))
+        elseif (typeof(f) == PrimV)
+            f = ClosV(f.args, f.body, env)
+            interp(f.body, extendEnvMult(f.args, e.args, f.env, env))
+        else
+            error("interp: application of a non-closure (JYSS)")
+        end
     elseif (typeof(e) == PrimC)
         interpPrim(e.o, interp(e.l, env), interp(e.r, env))
     elseif (typeof(e) == ErrC)
@@ -198,33 +229,15 @@ function interp(e::ExprC, env::Environment)
             error("interp: non-boolean provided as conditional (JYSS)")
         end
     elseif (typeof(e) == LamC)
-        ClosV(e.args, e.body, env)
+        cEnv = Environment(copy(env.b))
+        ClosV(e.args, e.body, cEnv)
     end
 end
 @test interp(NumC(10), topEnv) == NumV(10)
 @test interp(StrC("10"), topEnv) == StrV("10")
 @test interp(IdC("false"), topEnv) == BoolV(false)
+@test interp(AppC(LamC([], NumC(10)), []), topEnv) == NumV(10)
+@test interp(AppC(LamC(["x"], AppC(IdC("+"), [NumC(2), IdC("x")])), [NumC(98)]), topEnv) == NumV(100)
 @test interp(PrimC("+", NumC(19), NumC(3)), topEnv) == NumV(22)
 @test interp(IfC(IdC("false"), NumC(10), NumC(20)), topEnv) == NumV(20)
 @test typeof(interp(LamC([], NumC(19)), topEnv)) == ClosV
-
-# takes a binding and an environment and returns the given environment
-# with the binding added
-extendEnv(b::Bind, env::Environment) = push!(env, b)
-
-# takes a list of closure arguments, a list of application arguments,
-# a closure environment, and an application environment and adds the bindings
-# to the closure environment
-# Use Strings for Symbols? Have not finished this method
-function extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv::Environment)
-    if (isempty(cArgs) && isempty(fArgs))
-        cEnv
-    elseif isempty(cArgs)
-        throw(DomainError(cArgs, "extend-env-mult too many arguments provided (JYSS5)"))
-    elseif isempty(fArgs)
-        throw(DomainError(fArgs, "extend-env-mult too many arguments provided (JYSS)"))
-    else
-        temp = extendEnv(Bind(cArgs[1], interp(fArgs[1], fEnv)), cEnv)
-        # extendEnvMult(cArgs[2:...], fArgs[2:...], temp, fEnv)
-    end
-end
