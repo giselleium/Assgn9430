@@ -4,12 +4,15 @@ using Test
 struct NumC
     n
 end
+
 struct StrC
-    s
+    s::String
 end
+
 struct IdC
-    i
+    i::Symbol
 end
+
 struct IfC
     test
     then
@@ -22,12 +25,12 @@ struct AppC
 end
 
 struct LamC
-    args
+    args::Array{Symbol}
     body
 end
 
 struct PrimC
-    o
+    o::Symbol
     l
     r
 end
@@ -39,34 +42,32 @@ end
 ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
 
 # Value structs 
-
 struct NumV
-    num
+    num::Real
 end
 
 struct StrV
-    str
+    str::String
 end
 
 struct BoolV
-    bool
+    bool::Bool
 end
 
 struct ClosV
-    args
-    body
+    args::Array{Symbol}
+    body::ExprC
     env
 end
 
 struct PrimV
-    args
-    body
+    args::Array{Symbol}
+    body::ExprC
 end
 
 Value = Union{NumV,StrV,BoolV,ClosV,PrimV}
 
 # Bind Type
-
 struct Bind
     name
     value
@@ -192,7 +193,26 @@ extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv
         "extend-env-mult too many arguments provided (JYSS)"
     else
         extendEnvMult() # haven't implemented yet
-
     end
-# Tests
+
+#takes a symbol and an environment and returns the value
+#of the binding that has that symbol, if there is one
+
+lookup(target::String, env::Array{Bind}) =
+    if isempty(env)
+        println("name not found")
+    else
+        if target == env[1].name
+            env[1].value
+        else
+            popfirst!(env)
+            lookup(target, env)
+        end
+    end
+
+@test lookup("a", [Bind("b", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "third value"
+@test lookup("b", [Bind("a", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "second value"
+@test lookup("c", [Bind("c", "first value"), Bind("a", "second value"), Bind("b", "third value")]) == "third value"
+
+
 
