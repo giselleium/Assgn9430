@@ -93,7 +93,7 @@ topEnv = Environment([
 # takes a binding and an environment and returns the given environment
 # with the binding added
 
-extendEnv(b::Bind, env::Environment) = push!(env, b)
+function extendEnv(b::Bind, env::Environment) = push!(env, b)
 
 
 # takes a value and returns the serialization of the value
@@ -185,14 +185,36 @@ end
 
 # Use Strings for Symbols? Have not finished this method
 
-extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv::Environment) =
+function extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv::Environment) =
     if isempty(cArgs)
         "extend-env-mult too many arguments provided (JYSS)"
     elseif isempty(fArgs)
         "extend-env-mult too many arguments provided (JYSS)"
     else
-        extendEnvMult() # haven't implemented yet
+         extendEnvMult(cArgs[:1], fArgs[:1], cEnv, fEnv)
 
     end
 # Tests
+
+e1 = ExprC(10, 1, 1)
+e2 = ExprC(100, 1, 1)
+e3 = ExprC(20, 40, 60)
+
+
+b = Bind("Test Bind", "Value of 3")
+b1 = Bind("Test Bind 2", "Value of 4")
+b2 = Bind("Test Bind 3", "Value of 5")
+b3 = Bind("Test Bind 4", "Value of 6")
+
+bindArray = Bind[b, b1, b2, b3]
+
+println(b)
+
+testEnv = Enviroment(bindArray)
+testEnv2 = Enviroment(Bind[b,b1])
+testArrayStr = String["test"]
+testArrayExprC = ExprC[e1, e2, e3]
+testEmptyArr = String[]
+
+using Test
 
