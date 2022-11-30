@@ -72,14 +72,28 @@ struct Bind
     value
 end
 
-struct Enviroment
-    Bind[]
+struct Environment
+    b::Vector{Bind}
 end
+
+topEnv = Environment([
+    Bind("true", BoolV(true)),
+    Bind("false", BoolV(false)),
+    Bind("+", PrimV(["a", "b"], PrimC("+", IdC("a"), IdC("b")))),
+    Bind("-", PrimV(["a", "b"], PrimC("-", IdC("a"), IdC("b")))),
+    Bind("*", PrimV(["a", "b"], PrimC("*", IdC("a"), IdC("b")))),
+    Bind("/", PrimV(["a", "b"], PrimC("/", IdC("a"), IdC("b")))),
+    Bind("<=", PrimV(["a", "b"], PrimC("<=", IdC("a"), IdC("b")))),
+    Bind("equal?", PrimV(["a", "b"], PrimC("equal?", IdC("a"), IdC("b")))),
+    Bind("error", PrimV(["v"], ErrC(IdC("v"))))
+])
+
+
 
 # takes a binding and an environment and returns the given environment
 # with the binding added
 
-extendEnv(b::Bind, env::Enviroment) = push!(env, b)
+extendEnv(b::Bind, env::Environment) = push!(env, b)
 
 
 # takes a value and returns the serialization of the value
@@ -142,6 +156,27 @@ end
 @test interpPrim("<=", NumV(4), NumV(10)) == BoolV(true)
 @test interpPrim("equal?", NumV(4), NumV(10)) == BoolV(false)
 
+# takes a JYSS5 expression and an environment
+# and returns the value the expression evaluates to
+function interp(e::ExprC, env::Environment)
+    if (typeof(e) == NumC)
+        NumV(e.n)
+    elseif (typeof(e) == StrC)
+        StrV(e.s)
+    elseif (typeof(e) == IdC)
+        lookup(e.i, env)
+    elseif (typeof(e) == AppC)
+
+
+        # elseif (typeof(e) == PrimC)
+        # elseif (typeof(e) == ErrC)
+        # elseif (typeof(e) == IfC)
+        # elseif (typeof(e) == LamC)
+        # else
+    end
+end
+@test interp(NumC(10), topEnv) == NumV(10)
+@test interp(StrC("10"), topEnv) == StrV("10")
 
 
 # takes a list of closure arguments, a list of application arguments,
@@ -150,7 +185,7 @@ end
 
 # Use Strings for Symbols? Have not finished this method
 
-extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Enviroment, fEnv::Enviroment) =
+extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv::Environment) =
     if isempty(cArgs)
         "extend-env-mult too many arguments provided (JYSS)"
     elseif isempty(fArgs)
