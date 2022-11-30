@@ -112,7 +112,9 @@ lookup(target::String, env::Array{Bind}) =
 
 using Test
 
-@test lookup("s", [Bind("b", "SOME VALUE"), Bind("s", "some value")]) == "some value"
+@test lookup("a", [Bind("b", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "third value"
+@test lookup("b", [Bind("a", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "second value"
+@test lookup("c", [Bind("c", "first value"), Bind("a", "second value"), Bind("b", "third value")]) == "third value"
 
 # (define (lookup [for : Symbol] [env : Environment]) : Value
 #   (cond
