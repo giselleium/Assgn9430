@@ -1,82 +1,83 @@
 using Test
 
-# ExprC structs 
-struct NumC
-    n
+begin
+    # ExprC structs 
+    struct NumC
+        n
+    end
+
+    struct StrC
+        s::String
+    end
+
+    struct IdC
+        i::String
+    end
+
+    struct IfC
+        test
+        then
+        otherwise
+    end
+
+    struct AppC
+        app
+        args
+    end
+
+    struct LamC
+        args::Array{Symbol}
+        body
+    end
+
+    struct PrimC
+        o::String
+        l
+        r
+    end
+
+    struct ErrC
+        v
+    end
+
+    ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
+
+    # Value structs 
+    struct NumV
+        num::Real
+    end
+
+    struct StrV
+        str::String
+    end
+
+    struct BoolV
+        bool::Bool
+    end
+
+    struct ClosV
+        args
+        body
+        env
+    end
+
+    struct PrimV
+        args::Array{String}
+        body::ExprC
+    end
+
+    Value = Union{NumV,StrV,BoolV,ClosV,PrimV}
+
+    # Bind Type
+    struct Bind
+        name
+        value
+    end
+
+    struct Environment
+        b::Vector{Bind}
+    end
 end
-
-struct StrC
-    s::String
-end
-
-struct IdC
-    i::Symbol
-end
-
-struct IfC
-    test
-    then
-    otherwise
-end
-
-struct AppC
-    app
-    args
-end
-
-struct LamC
-    args::Array{Symbol}
-    body
-end
-
-struct PrimC
-    o::Symbol
-    l
-    r
-end
-
-struct ErrC
-    v
-end
-
-ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
-
-# Value structs 
-struct NumV
-    num::Real
-end
-
-struct StrV
-    str::String
-end
-
-struct BoolV
-    bool::Bool
-end
-
-struct ClosV
-    args::Array{Symbol}
-    body::ExprC
-    env
-end
-
-struct PrimV
-    args::Array{Symbol}
-    body::ExprC
-end
-
-Value = Union{NumV,StrV,BoolV,ClosV,PrimV}
-
-# Bind Type
-struct Bind
-    name
-    value
-end
-
-struct Environment
-    b::Vector{Bind}
-end
-
 topEnv = Environment([
     Bind("true", BoolV(true)),
     Bind("false", BoolV(false)),
@@ -198,7 +199,7 @@ extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Environment, fEnv
 #takes a symbol and an environment and returns the value
 #of the binding that has that symbol, if there is one
 
-lookup(target::String, env::Array{Bind}) =
+lookup(target::String, env::Vector{Bind}) =
     if isempty(env)
         println("name not found")
     else
@@ -212,7 +213,7 @@ lookup(target::String, env::Array{Bind}) =
 
 @test lookup("a", [Bind("b", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "third value"
 @test lookup("b", [Bind("a", "first value"), Bind("b", "second value"), Bind("a", "third value")]) == "second value"
-@test lookup("c", [Bind("c", "first value"), Bind("a", "second value"), Bind("b", "third value")]) == "third value"
+@test lookup("c", [Bind("b", "first value"), Bind("a", "second value"), Bind("c", "third value")]) == "third value"
 
 
 
