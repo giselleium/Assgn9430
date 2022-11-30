@@ -23,6 +23,8 @@ struct LamC
     body
 end
 
+# Value structs 
+
 # ; takes a JYSS5 expression and an environment
 # ; and returns the value the expression evaluates to
 # (define (interp [e : ExprC] [env : Environment]) : Value
