@@ -1,7 +1,6 @@
+
+
 # ExprC structs 
-
-ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
-
 struct NumC
     n
 end
@@ -36,6 +35,8 @@ end
 struct ErrC
     v
 end
+
+ExprC = Union{NumC,StrC,IdC,IfC,LamC,PrimC,ErrC}
 
 # Value structs 
 
@@ -77,6 +78,31 @@ end
 # with the binding added
 
 extendEnv(b::Bind, env::Enviroment) = push!(env, b)
+
+
+# takes a value and returns the serialization of the value
+function serialize(v)
+    if (typeof(v) == NumV)
+        string(v.num)
+    elseif (typeof(v) == StrV)
+        string(v.str)
+    elseif (typeof(v) == BoolV)
+        if (v.bool)
+            "true"
+        else
+            "false"
+        end
+    elseif (typeof(v) == ClosV)
+        "#<procedure>"
+    else
+        "#<primop>"
+    end
+end
+
+println(serialize(NumV(10)))
+println(serialize(NumV(10)) == "10")
+
+
 
 # takes a list of closure arguments, a list of application arguments,
 # a closure environment, and an application environment and adds the bindings
