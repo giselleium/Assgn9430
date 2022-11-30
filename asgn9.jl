@@ -1,4 +1,4 @@
-
+using Test
 
 # ExprC structs 
 struct NumC
@@ -63,6 +63,8 @@ struct PrimV
     body
 end
 
+Value = Union{NumV,StrV,BoolV,ClosV,PrimV}
+
 # Bind Type
 
 struct Bind
@@ -98,9 +100,47 @@ function serialize(v)
         "#<primop>"
     end
 end
+@test serialize(NumV(10)) == "10"
+@test serialize(BoolV(false)) == "false"
+@test serialize(ClosV(1, 2, 3)) == "#<procedure>"
 
-println(serialize(NumV(10)))
-println(serialize(NumV(10)) == "10")
+# takes a symbol and a left and right value and returns
+# the result of the operation the symbol represents on the two given values
+function interpPrim(o::String, l::Value, r::Value)
+    if (typeof(l) == NumV && typeof(r) == NumV)
+        if (o == "+")
+            NumV(l.num + r.num)
+        elseif (o == "-")
+            NumV(l.num - r.num)
+        elseif (o == "*")
+            NumV(l.num * r.num)
+        elseif (o == "/")
+            if (r.num == 0)
+                throw(DomainError(o, "interpPrim division by zero (JYSS5)"))
+            else
+                NumV(l.num / r.num)
+            end
+        elseif (o == "<=")
+            BoolV(l.num <= r.num)
+        elseif (o == "equal?")
+            if (typeof(l) == ClosV ||
+                typeof(l) == PrimV ||
+                typeof(r) == ClosV ||
+                typeof(r) == PrimV)
+                BoolV(false)
+            else
+                BoolV(l.num == r.num)
+            end
+        end
+    else
+        throw(DomainError(o, "interpPrim invalid input (JYSS5)"))
+    end
+end
+@test interpPrim("+", NumV(19), NumV(3)) == NumV(22)
+@test interpPrim("/", NumV(20), NumV(4)) == NumV(5.0)
+@test interpPrim("<=", NumV(20), NumV(4)) == BoolV(false)
+@test interpPrim("<=", NumV(4), NumV(10)) == BoolV(true)
+@test interpPrim("equal?", NumV(4), NumV(10)) == BoolV(false)
 
 
 
@@ -121,10 +161,3 @@ extendEnvMult(cArgs::Array{String}, fArgs::Array{ExprC}, cEnv::Enviroment, fEnv:
     end
 # Tests
 
-x = NumC(10)
-y = IfC(10, 11, 12)
-println(x)
-println(y)
-
-b = Bind("Test Bind", "Value of 3")
-println(b)
