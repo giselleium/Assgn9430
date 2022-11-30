@@ -76,8 +76,6 @@ end
 struct Environment
     b::Vector{Bind}
 end
-<<<<<<< HEAD
-=======
 
 topEnv = Environment([
     Bind("true", BoolV(true)),
