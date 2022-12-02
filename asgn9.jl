@@ -1,7 +1,4 @@
 using Test
-# import Pkg;
-# Pkg.add("Match");
-using Match
 
 begin
     # ExprC structs 
